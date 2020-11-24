@@ -21,6 +21,7 @@ the lower the better.
 #          Konstantin Shmelkov <konstantin.shmelkov@polytechnique.edu>
 #          Christian Lorentzen <lorentzen.ch@googlemail.com>
 #          Ashutosh Hathidara <ashutoshhathidara98@gmail.com>
+#          Tomasz Chodakowski <tch+git@wp.eu>
 # License: BSD 3 clause
 
 import numpy as np
@@ -261,6 +262,90 @@ def mean_absolute_percentage_error(y_true, y_pred,
     mape = np.abs(y_pred - y_true) / np.maximum(np.abs(y_true), epsilon)
     output_errors = np.average(mape,
                                weights=sample_weight, axis=0)
+    if isinstance(multioutput, str):
+        if multioutput == 'raw_values':
+            return output_errors
+        elif multioutput == 'uniform_average':
+            # pass None as weights to np.average: uniform mean
+            multioutput = None
+
+    return np.average(output_errors, weights=multioutput)
+
+
+def symmetric_mean_absolute_percentage_error(y_true, y_pred,
+                                             sample_weight=None,
+                                             multioutput='uniform_average'):
+    """Symmetric mean absolute percentage error regression loss.
+
+    Note that, similarly to MAPE, a convention is assumed where the percentage
+    points are represented as fractional numbers, which in case of sMAPE are
+    between 0 and 1.
+
+    For more details on the metric see
+    :ref:`User Guide <symetric_mean_absolute_percentage_error>`.
+
+    .. versionadded:: 0.24
+
+    Parameters
+    ----------
+    y_true : array-like of shape (n_samples,) or (n_samples, n_outputs)
+        Ground truth (correct) target values.
+
+    y_pred : array-like of shape (n_samples,) or (n_samples, n_outputs)
+        Estimated target values.
+
+    sample_weight : array-like of shape (n_samples,), default=None
+        Sample weights.
+
+    multioutput : {'raw_values', 'uniform_average'} or array-like
+        Defines aggregating of multiple output values.
+        Array-like value defines weights used to average errors.
+        If input is list then the shape must be (n_outputs,).
+
+        'raw_values' :
+            Returns a full set of errors in case of multioutput input.
+
+        'uniform_average' :
+            Errors of all outputs are averaged with uniform weight.
+
+    Returns
+    -------
+    loss : float or ndarray of floats in the range [0, 1]
+        If multioutput is 'raw_values', then mean absolute percentage error
+        is returned for each output separately.
+        If multioutput is 'uniform_average' or an ndarray of weights, then the
+        weighted average of all output errors is returned.
+
+        The best value is 0 and the worst is 1.0
+
+    Examples
+    --------
+    >>> from sklearn.metrics import symmetric_mean_absolute_percentage_error
+    >>> y_true = [1, 5 , 2]
+    >>> y_pred = [.5, 2.5, 1]
+    >>> symmetric_mean_absolute_percentage_error(y_true, y_pred)
+    0.3273...
+    >>> y_true = [[0.5, 1], [-1, 1], [7, -6]]
+    >>> y_pred = [[0.25, 0.5], [-1, 1], [8, -5]]
+    >>> symmetric_mean_absolute_percentage_error(y_true, y_pred)
+    0.5515...
+    >>> symmetric_mean_absolute_percentage_error(y_true, y_pred,
+    >>>                                          multioutput=[0.1, 0.9])
+    0.6198...
+    """
+    y_type, y_true, y_pred, multioutput = _check_reg_targets(
+        y_true, y_pred, multioutput)
+    check_consistent_length(y_true, y_pred, sample_weight)
+    #following MAPE convention below
+    numerator = np.abs(y_pred - y_true)
+    denominator = np.abs(y_true) + np.abs(y_pred)
+    zero_error = (numerator == 0) | (denominator == 0)
+    smape = np.zeros(y_true.shape)
+    smape[~zero_error] = numerator[~zero_error] / denominator[~zero_error]
+
+    output_errors = np.average(smape,
+                               weights=sample_weight, axis=0)
+
     if isinstance(multioutput, str):
         if multioutput == 'raw_values':
             return output_errors

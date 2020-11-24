@@ -2194,6 +2194,34 @@ the small magnitude values and only reflected the error in prediction of highest
 magnitude value. But that problem is resolved in case of MAPE because it calculates
 relative percentage error with respect to actual output.
 
+.. _symmetric_mean_absolute_percentage_error:
+
+Symmetric mean absolute percentage error
+------------------------------
+The :func:`symmetric_mean_absolute_percentage_error` (sMAPE), is an evaluation
+metric for regression problems. It provides bounded result betwen 0 and 1.
+
+If :math:`\hat{y}_i` is the predicted value of the :math:`i`-th sample,
+:math:`y_i` is the corresponding true value, then sMAPE estimated over
+:math:`n_{\text{samples}}` is defined as
+
+.. math::
+
+  \text{sMAPE}(y, \hat{y}) = \frac{1}{n_{\text{samples}}} \sum_{i=0}^{n_{\text{samples}}-1} \frac{{}\left| \hat{y}_i - y_i\right|}{\left| y_i \right| - \left| \hat{y}_i \right|}
+
+and whenever value in the denominator is 0 the error is assumed to be 0.
+
+
+See below for an example usage of the :func:`symmetric_mean_absolute_percentage_error`
+function:
+
+  >>> from sklearn.metrics import mean_absolute_percentage_error
+  >>> y_true = [1, 5, 2]
+  >>> y_pred = [0.5, 2.5, 1]
+  >>> symmetric_mean_absolute_percentage_error(y_true, y_pred)
+  0.2666...
+
+
 .. _median_absolute_error:
 
 Median absolute error

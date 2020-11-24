@@ -14,6 +14,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_squared_log_error
 from sklearn.metrics import median_absolute_error
 from sklearn.metrics import mean_absolute_percentage_error
+from sklearn.metrics import symmetric_mean_absolute_percentage_error
 from sklearn.metrics import max_error
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_tweedie_deviance
@@ -94,6 +95,11 @@ def test_multioutput_regression():
                       decimals=2)
     assert np.isfinite(error)
     assert error > 1e6
+
+    error = np.around(symmetric_mean_absolute_percentage_error(y_true, y_pred),
+                      decimals=2)
+    assert error == pytest.approx(0.42)
+
     error = median_absolute_error(y_true, y_pred)
     assert_almost_equal(error, (1. + 1.) / 4.)
 
@@ -109,6 +115,8 @@ def test_regression_metrics_at_limits():
     assert_almost_equal(mean_squared_log_error([0.], [0.]), 0.00, 2)
     assert_almost_equal(mean_absolute_error([0.], [0.]), 0.00, 2)
     assert_almost_equal(mean_absolute_percentage_error([0.], [0.]), 0.00, 2)
+    assert_almost_equal(symmetric_mean_absolute_percentage_error([0.], [0.]),
+                        0.00, 7)
     assert_almost_equal(median_absolute_error([0.], [0.]), 0.00, 2)
     assert_almost_equal(max_error([0.], [0.]), 0.00, 2)
     assert_almost_equal(explained_variance_score([0.], [0.]), 1.00, 2)
@@ -330,3 +338,42 @@ def test_mean_absolute_percentage_error():
     y_true = random_number_generator.exponential(size=100)
     y_pred = 1.2 * y_true
     assert mean_absolute_percentage_error(y_true, y_pred) == pytest.approx(0.2)
+
+
+def test_symmetric_mean_absolute_percentage_error():
+    random_number_generator = np.random.RandomState(42)
+    y_true = random_number_generator.normal(size=50)
+    y_pred = y_true
+    assert symmetric_mean_absolute_percentage_error(y_true, y_pred) ==\
+        pytest.approx(0.0)
+    assert symmetric_mean_absolute_percentage_error(y_pred, y_true) ==\
+        pytest.approx(0.0)
+
+    # notice lack of symmetry with regards to under- and over-predictions
+    assert symmetric_mean_absolute_percentage_error(y_true, y_true-0.1) !=\
+        symmetric_mean_absolute_percentage_error(y_true, y_true+0.1)
+
+    y_pred = y_true * 2.0
+    assert symmetric_mean_absolute_percentage_error(y_true, y_pred) ==\
+        pytest.approx(0.33333333)
+    assert symmetric_mean_absolute_percentage_error(y_pred, y_true) ==\
+        pytest.approx(0.33333333)
+
+    y_pred = y_true + 1e6
+    assert symmetric_mean_absolute_percentage_error(y_true, y_pred) ==\
+        pytest.approx(1.)
+    assert symmetric_mean_absolute_percentage_error(y_pred, y_true) ==\
+        pytest.approx(1.)
+
+    y_pred = y_true - 1e6
+    assert symmetric_mean_absolute_percentage_error(y_true, y_pred) ==\
+        pytest.approx(1.)
+    assert symmetric_mean_absolute_percentage_error(y_pred, y_true) ==\
+        pytest.approx(1.)
+
+    y_true = [1e-2, 1e-2]
+    y_pred = [1e-11, 1e-11]
+    assert symmetric_mean_absolute_percentage_error(y_true, y_pred) ==\
+        pytest.approx(1.0)
+    assert symmetric_mean_absolute_percentage_error(y_pred, y_true) ==\
+        pytest.approx(1.0)
